@@ -1,0 +1,241 @@
+CREATE DATABASE IF NOT EXISTS WebApartment
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
+
+USE WebApartment;
+
+-- ================= VAI TRO =================
+CREATE TABLE VaiTro (
+    maVaiTro VARCHAR(100) PRIMARY KEY,
+    tenVaiTro VARCHAR(50) NOT NULL
+);
+
+-- ================= NGUOI DUNG =================
+CREATE TABLE NguoiDung (
+    maNguoiDung VARCHAR(100) PRIMARY KEY,
+    maVaiTro VARCHAR(100),
+    hoVaTen VARCHAR(255),
+    email VARCHAR(255) UNIQUE,
+    diaChi VARCHAR(255),
+    soDienThoai VARCHAR(30) UNIQUE,
+    trangThai BOOLEAN DEFAULT TRUE,
+    matKhau VARCHAR(255),
+    facebookAccount VARCHAR(255),
+    googleAccount VARCHAR(255),
+    anhDaiDien VARCHAR(500),
+
+    FOREIGN KEY (maVaiTro) REFERENCES VaiTro(maVaiTro)
+);
+
+-- ================= DANH MUC =================
+CREATE TABLE DanhMuc (
+    maDanhMuc VARCHAR(100) PRIMARY KEY,
+    tenDanhMuc VARCHAR(255) NOT NULL
+);
+
+-- ================= BAI DANG =================
+CREATE TABLE BaiDang (
+    maBaiDang VARCHAR(100) PRIMARY KEY,
+    maNguoiDung VARCHAR(100),
+    maDanhMuc VARCHAR(100),
+
+    tieuDe VARCHAR(255),
+    noiDung TEXT,
+    ngayDang DATE,
+
+    -- CHO_THANH_TOAN / ACTIVE / HET_HAN / DA_THUE / BI_AN
+    trangThai VARCHAR(50),
+
+    lienHe VARCHAR(50),
+
+    -- Tiền mặt / Chuyển khoản / Cả hai
+    hinhThucThanhToan VARCHAR(255),
+
+    FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung),
+    FOREIGN KEY (maDanhMuc) REFERENCES DanhMuc(maDanhMuc)
+);
+
+-- ================= CHI TIET CAN HO =================
+CREATE TABLE ChiTietCanHo (
+    maChiTietCanHo VARCHAR(100) PRIMARY KEY,
+    maBaiDang VARCHAR(100) UNIQUE,
+
+    gia DOUBLE,
+    dienTich FLOAT,
+    phongNgu INT,
+    diaChiCuThe VARCHAR(255),
+    huongCanHo VARCHAR(255),
+    phuong VARCHAR(255),
+    lat DOUBLE,
+    lng DOUBLE,
+    ngayTao DATETIME,
+
+    FOREIGN KEY (maBaiDang) REFERENCES BaiDang(maBaiDang)
+);
+
+-- ================= TIEN ICH =================
+CREATE TABLE TienIch (
+    maTienIch VARCHAR(100) PRIMARY KEY,
+    tenTienIch VARCHAR(255) NOT NULL UNIQUE
+);
+
+-- ================= BAI DANG - TIEN ICH =================
+CREATE TABLE BaiDang_TienIch (
+    maBaiDang VARCHAR(100),
+    maTienIch VARCHAR(100),
+
+    PRIMARY KEY (maBaiDang, maTienIch),
+    FOREIGN KEY (maBaiDang) REFERENCES BaiDang(maBaiDang),
+    FOREIGN KEY (maTienIch) REFERENCES TienIch(maTienIch)
+);
+
+-- ================= HINH ANH BAI DANG =================
+CREATE TABLE HinhAnhBaiDang (
+    maHinhAnhBaiDang VARCHAR(100) PRIMARY KEY,
+    maBaiDang VARCHAR(100),
+
+    loai VARCHAR(255),
+    duongDan VARCHAR(500),
+    thumbnailUrl VARCHAR(500),
+    thuTu INT,
+
+    FOREIGN KEY (maBaiDang) REFERENCES BaiDang(maBaiDang)
+);
+
+-- ================= BAI DANG YEU THICH =================
+CREATE TABLE BaiDangYeuThich (
+    maNguoiDung VARCHAR(100),
+    maBaiDang VARCHAR(100),
+    ngayTao DATETIME,
+
+    PRIMARY KEY (maNguoiDung, maBaiDang),
+    FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung),
+    FOREIGN KEY (maBaiDang) REFERENCES BaiDang(maBaiDang)
+);
+
+-- ================= NHU CAU NGUOI DUNG =================
+CREATE TABLE NhuCauNguoiDung (
+    maNhuCauNguoiDung VARCHAR(100) PRIMARY KEY,
+    maNguoiDung VARCHAR(100),
+
+    minPrice DOUBLE,
+    maxPrice DOUBLE,
+    phuong VARCHAR(50),
+    loaiCanHo VARCHAR(50),
+    coBanCong BOOLEAN,
+    dayDuNoiThat BOOLEAN,
+    ganTrungTam BOOLEAN,
+    ganBien BOOLEAN,
+    ngayTao DATETIME,
+
+    FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung)
+);
+
+-- ================= LICH SU TIM KIEM =================
+CREATE TABLE LichSuTimKiem (
+    maLichSuTimKiem VARCHAR(100) PRIMARY KEY,
+    maNguoiDung VARCHAR(100),
+
+    tuKhoa VARCHAR(255),
+    minPrice DOUBLE,
+    maxPrice DOUBLE,
+    phuong VARCHAR(255),
+    thoiGian DATETIME,
+
+    FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung)
+);
+
+-- ================= TUONG TAC NGUOI DUNG =================
+CREATE TABLE TuongTacNguoiDung (
+    maTuongTacNguoiDung VARCHAR(100) PRIMARY KEY,
+    maNguoiDung VARCHAR(100),
+    maBaiDang VARCHAR(100),
+
+    loaiHanhDong VARCHAR(255),
+    ngayTao DATETIME,
+
+    FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung),
+    FOREIGN KEY (maBaiDang) REFERENCES BaiDang(maBaiDang)
+);
+
+-- ================= PHUONG THUC THANH TOAN =================
+CREATE TABLE PhuongThucThanhToan (
+    maPhuongThucThanhToan VARCHAR(100) PRIMARY KEY,
+    tenPhuongThucThanhToan VARCHAR(255) NOT NULL,
+    moTa VARCHAR(255)
+);
+
+-- ================= HOA DON =================
+CREATE TABLE HoaDon (
+    maHoaDon VARCHAR(100) PRIMARY KEY,
+    maNguoiDung VARCHAR(100) NOT NULL,
+    maBaiDang VARCHAR(100),
+
+    -- DANG_BAI / THUE_CAN_HO
+    loaiHoaDon VARCHAR(50) NOT NULL,
+
+    soTien DOUBLE NOT NULL,
+
+    -- PENDING / SUCCESS / FAILED / CANCELLED
+    trangThaiThanhToan VARCHAR(50),
+
+    -- CHUA_HIEU_LUC / DANG_HIEU_LUC / HET_HIEU_LUC
+    trangThaiHieuLuc VARCHAR(50),
+
+    -- Với DANG_BAI: hiệu lực bài đăng 1 tháng
+    -- Với THUE_CAN_HO: thời gian thuê/cọc nếu cần
+    ngayBatDau DATETIME,
+    ngayKetThuc DATETIME,
+
+    ghiChu VARCHAR(255),
+    ngayTao DATETIME,
+    ngayThanhToan DATETIME,
+
+    FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung),
+    FOREIGN KEY (maBaiDang) REFERENCES BaiDang(maBaiDang)
+);
+
+-- ================= GIAO DICH VNPAY =================
+CREATE TABLE GiaoDich (
+    maGiaoDich VARCHAR(100) PRIMARY KEY,
+    maHoaDon VARCHAR(100) NOT NULL,
+    maNguoiDung VARCHAR(100) NOT NULL,
+    maPhuongThucThanhToan VARCHAR(100),
+
+    soTien DOUBLE,
+    trangThai VARCHAR(50),
+
+    vnpTxnRef VARCHAR(100),
+    vnpTransactionNo VARCHAR(100),
+    vnpResponseCode VARCHAR(50),
+    vnpTransactionStatus VARCHAR(50),
+    vnpBankCode VARCHAR(50),
+    vnpPayDate VARCHAR(50),
+    vnpOrderInfo VARCHAR(255),
+
+    noiDung VARCHAR(255),
+    ngayTao DATETIME,
+
+    FOREIGN KEY (maHoaDon) REFERENCES HoaDon(maHoaDon),
+    FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung),
+    FOREIGN KEY (maPhuongThucThanhToan) REFERENCES PhuongThucThanhToan(maPhuongThucThanhToan)
+);
+
+-- ================= DATA MAU =================
+INSERT INTO VaiTro (maVaiTro, tenVaiTro) VALUES
+('1', 'Admin'),
+('2', 'Người Thuê'),
+('3', 'Người Cho Thuê');
+
+INSERT INTO DanhMuc (maDanhMuc, tenDanhMuc) VALUES
+('1', 'Căn hộ');
+
+INSERT INTO TienIch (maTienIch, tenTienIch) VALUES
+('1', 'Điều hòa'),
+('2', 'Tủ lạnh'),
+('3', 'Máy giặt');
+
+INSERT INTO PhuongThucThanhToan
+(maPhuongThucThanhToan, tenPhuongThucThanhToan, moTa) VALUES
+('1', 'VNPAY', 'Thanh toán qua VNPAY'),
+('2', 'Tiền mặt', 'Thanh toán trực tiếp');

@@ -1,0 +1,32 @@
+h2 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+.ant-btn-primary {
+  border-radius: 6px;
+}
+.ant-table {
+  background: #fff;
+  border-radius: 8px;
+  padding: 10px;
+}
+.ant-modal {
+  top: 40px;
+}
+
+.market-ai-box {
+  margin: 18px 0 22px;
+  padding: 16px;
+  border: 1px solid #dbeafe;
+  background: #f8fbff;
+  border-radius: 14px;
+}
+
+.market-ai-btn {
+  margin-top: 14px;
+  width: 100%;
+  height: 42px;
+  font-weight: 700;
+  border-radius: 10px;
+}

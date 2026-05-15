@@ -1,0 +1,194 @@
+.sepay-layout {
+  min-height: 100vh;
+  padding: 100px 0 56px 0;
+  background: #f4f7fb;
+  display: grid;
+  grid-template-columns: 265px 1fr;
+  align-items: start;
+}
+
+.sepay-content-area {
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  padding: 0 40px;
+}
+
+.sepay-page {
+  width: 100%;
+  max-width: 680px;
+}
+
+.sepay-card {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.07);
+}
+
+.sepay-card__header {
+  padding: 22px 28px;
+  background: #1f2937;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.sepay-card h2 {
+  margin: 0;
+  font-size: clamp(1.35rem, 2.4vw, 1.85rem);
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.sepay-price {
+  flex: none;
+  color: #f4d58d;
+  font-size: clamp(1.55rem, 3.2vw, 2rem);
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.sepay-body {
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.sepay-qr-panel {
+  padding: 16px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  display: flex;
+  justify-content: center;
+}
+
+.sepay-qr-panel img {
+  width: 190px;
+  max-width: 100%;
+  border-radius: 12px;
+  padding: 8px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+
+.sepay-info {
+  display: grid;
+  gap: 10px;
+}
+
+.sepay-info-item {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+}
+
+.sepay-info-item--code {
+  background: #fff7ed;
+  border-color: rgba(234, 88, 12, 0.22);
+}
+
+.sepay-info-label {
+  display: block;
+  font-size: 0.73rem;
+  font-weight: 800;
+  color: #6b7280;
+  margin-bottom: 6px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sepay-info-value {
+  font-size: 0.9rem;
+  color: #111827;
+  word-break: break-word;
+}
+
+.sepay-transfer-code {
+  color: #dc2626;
+  font-size: 1rem;
+}
+
+.sepay-status {
+  margin-top: 2px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.sepay-status.pending {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.sepay-status.success {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.sepay-status.failed {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.sepay-note {
+  margin: 6px 0 0;
+  color: #6b7280;
+  line-height: 1.7;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 1100px) {
+  .sepay-layout {
+    grid-template-columns: 1fr;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .sepay-layout .navbar-management {
+    display: none;
+  }
+}
+
+@media (max-width: 820px) {
+  .sepay-card__header,
+  .sepay-body {
+    grid-template-columns: 1fr;
+  }
+
+  .sepay-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .sepay-body {
+    padding: 22px;
+  }
+}
+
+@media (max-width: 640px) {
+  .sepay-layout {
+    padding: 88px 14px 48px;
+  }
+
+  .sepay-card__header {
+    padding: 20px 18px;
+  }
+
+  .sepay-body {
+    padding: 16px;
+  }
+
+  .sepay-qr-panel {
+    padding: 16px;
+  }
+}
