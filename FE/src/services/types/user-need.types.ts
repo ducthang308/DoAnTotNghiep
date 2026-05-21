@@ -7,6 +7,12 @@ export interface IUserNeed {
   loaiCanHo: string | null;
   coBanCong: boolean;
   dayDuNoiThat: boolean;
+  coMayLanh: boolean;
+  coThangMay: boolean;
+  coMayGiat: boolean;
+  coNhaXe: boolean;
+  coTuLanh: boolean;
+  gioGiacTuDo: boolean;
   ganTrungTam: boolean;
   ganBien: boolean;
   ngayTao?: string | null;
@@ -19,6 +25,12 @@ export interface IUserNeedFormValues {
   loaiCanHo: string;
   coBanCong: boolean;
   dayDuNoiThat: boolean;
+  coMayLanh: boolean;
+  coThangMay: boolean;
+  coMayGiat: boolean;
+  coNhaXe: boolean;
+  coTuLanh: boolean;
+  gioGiacTuDo: boolean;
   ganTrungTam: boolean;
   ganBien: boolean;
 }

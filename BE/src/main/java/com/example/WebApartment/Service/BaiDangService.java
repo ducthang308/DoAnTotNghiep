@@ -27,15 +27,32 @@ public class BaiDangService {
 
     private static final String ROLE_NGUOI_CHO_THUE = "3";
     private static final String GOI_ACTIVE = "ACTIVE";
+    private static final String POST_PENDING = "PENDING";
+    private static final String POST_APPROVED = "APPROVED";
+    private static final String POST_REJECTED = "REJECTED";
 
     public List<BaiDangDTO> getAll() {
-        return repo.findAll().stream().map(this::toDto).collect(Collectors.toList());
+        return repo.findByTrangThai("ACTIVE")
+                .stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
     }
 
     public BaiDangDTO getById(String id) {
         BaiDang entity = repo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bài đăng"));
+
         return toDto(entity);
+    }
+
+    public BaiDangDTO increaseView(String id) {
+        BaiDang entity = repo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy bài đăng"));
+
+        Long current = entity.getLuotXem() == null ? 0L : entity.getLuotXem();
+        entity.setLuotXem(current + 1);
+
+        return toDto(repo.save(entity));
     }
 
     public BaiDangDTO create(BaiDangDTO dto) {
@@ -71,7 +88,7 @@ public class BaiDangService {
                 .tieuDe(dto.getTieuDe())
                 .noiDung(dto.getNoiDung())
                 .ngayDang(LocalDateTime.now())
-                .trangThai("ACTIVE")
+                .trangThai(POST_PENDING)
                 .lienHe(dto.getLienHe())
                 .hinhThucThanhToan(dto.getHinhThucThanhToan())
                 .build();
@@ -96,6 +113,22 @@ public class BaiDangService {
         BaiDang existing = repo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bài đăng"));
         repo.delete(existing);
+    }
+
+    public BaiDangDTO approve(String id) {
+        BaiDang existing = repo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy bài đăng"));
+
+        existing.setTrangThai(POST_APPROVED);
+        return toDto(repo.save(existing));
+    }
+
+    public BaiDangDTO reject(String id) {
+        BaiDang existing = repo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy bài đăng"));
+
+        existing.setTrangThai(POST_REJECTED);
+        return toDto(repo.save(existing));
     }
 
     private void validateCreate(BaiDangDTO dto) {
@@ -127,16 +160,22 @@ public class BaiDangService {
                 .trangThai(e.getTrangThai())
                 .lienHe(e.getLienHe())
                 .hinhThucThanhToan(e.getHinhThucThanhToan())
+                .luotXem(e.getLuotXem())
                 .build();
     }
 
     private String generateMaBaiDang() {
-        Optional<BaiDang> last = repo.findTopByOrderByMaBaiDangDesc();
+        List<BaiDang> all = repo.findAll();
 
-        if (last.isEmpty()) return "BD1";
+        int maxNumber = all.stream()
+                .map(BaiDang::getMaBaiDang)
+                .filter(id -> id != null && id.startsWith("BD"))
+                .map(id -> id.replace("BD", ""))
+                .filter(number -> number.matches("\\d+"))
+                .mapToInt(Integer::parseInt)
+                .max()
+                .orElse(0);
 
-        String lastId = last.get().getMaBaiDang();
-        int number = Integer.parseInt(lastId.replace("BD", ""));
-        return "BD" + (number + 1);
+        return "BD" + (maxNumber + 1);
     }
 }

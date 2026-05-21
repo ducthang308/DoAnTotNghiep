@@ -19,4 +19,23 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, String> {
     List<HoaDon> findByTrangThaiThanhToan(String trangThaiThanhToan);
 
     Optional<HoaDon> findByNoiDungChuyenKhoan(String noiDungChuyenKhoan);
+
+    List<HoaDon> findByLoaiHoaDonAndTrangThaiThanhToan(
+            String loaiHoaDon,
+            String trangThaiThanhToan
+    );
+
+    List<HoaDon> findByBaiDang_NguoiDung_MaNguoiDungAndLoaiHoaDonAndTrangThaiThanhToan(
+            String maNguoiDung,
+            String loaiHoaDon,
+            String trangThaiThanhToan
+    );
+
+    List<HoaDon> findByBaiDang_MaBaiDangAndLoaiHoaDonAndTrangThaiThanhToan(
+            String maBaiDang,
+            String loaiHoaDon,
+            String trangThaiThanhToan
+    );
+
+    long countByTrangThaiThanhToanIgnoreCase(String trangThaiThanhToan);
 }

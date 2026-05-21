@@ -4,7 +4,9 @@ import {
   getCategories,
   getFavoriteCountByPost,
   getPostImages,
+  getPostImageUrls,
   getPosts,
+  getPostVideoUrls,
 } from './PostManagementService';
 import type {
   BaiDangDTO,
@@ -41,7 +43,7 @@ interface ListingData {
   stats: IHomeStat[];
 }
 
-const HIDDEN_POST_STATUSES = new Set(['HIDDEN', 'PENDING', 'CHO_DUYET', 'TU_CHOI', 'DELETED']);
+const PUBLIC_POST_STATUSES = new Set(['ACTIVE', 'APPROVED']);
 
 export const HOME_STATIC_CONTENT = {
   heroTitle: 'Nền tảng cho thuê nhà, phòng trọ và căn hộ đáng tin cậy tại Đà Nẵng',
@@ -50,9 +52,9 @@ export const HOME_STATIC_CONTENT = {
 };
 
 export const HOME_DEFAULT_STATS: IHomeStat[] = [
-  { label: 'Tin đang hiển thị', value: '73.513+' },
-  { label: 'Chủ nhà đang hoạt động', value: '8.200+' },
-  { label: 'Khu vực được phủ', value: '56+' },
+  { label: 'Tin đang hiển thị', value: '0' },
+  { label: 'Chủ nhà đang hoạt động', value: '0' },
+  { label: 'Khu vực được phủ', value: '0' },
 ];
 
 export const DEFAULT_HOME_CATEGORIES: IHomeCategory[] = [
@@ -150,77 +152,68 @@ export const slugify = (value: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'danh-muc';
 
+export const WARD_OPTIONS = [
+  { name: 'Hải Châu 1', districtId: 'hai-chau' },
+  { name: 'Hải Châu 2', districtId: 'hai-chau' },
+  { name: 'Thạch Thang', districtId: 'hai-chau' },
+  { name: 'Thanh Bình', districtId: 'hai-chau' },
+  { name: 'Thuận Phước', districtId: 'hai-chau' },
+  { name: 'Hòa Thuận Đông', districtId: 'hai-chau' },
+  { name: 'Hòa Thuận Tây', districtId: 'hai-chau' },
+  { name: 'Bình Hiên', districtId: 'hai-chau' },
+  { name: 'Bình Thuận', districtId: 'hai-chau' },
+  { name: 'Nam Dương', districtId: 'hai-chau' },
+  { name: 'Phước Ninh', districtId: 'hai-chau' },
+  { name: 'Hòa Cường Bắc', districtId: 'hai-chau' },
+  { name: 'Hòa Cường Nam', districtId: 'hai-chau' },
+  { name: 'An Hải Bắc', districtId: 'son-tra' },
+  { name: 'An Hải Tây', districtId: 'son-tra' },
+  { name: 'An Hải Đông', districtId: 'son-tra' },
+  { name: 'Mân Thái', districtId: 'son-tra' },
+  { name: 'Nại Hiên Đông', districtId: 'son-tra' },
+  { name: 'Phước Mỹ', districtId: 'son-tra' },
+  { name: 'Thọ Quang', districtId: 'son-tra' },
+  { name: 'Mỹ An', districtId: 'ngu-hanh-son' },
+  { name: 'Khuê Mỹ', districtId: 'ngu-hanh-son' },
+  { name: 'Hòa Hải', districtId: 'ngu-hanh-son' },
+  { name: 'Hòa Quý', districtId: 'ngu-hanh-son' },
+  { name: 'Tam Thuận', districtId: 'thanh-khe' },
+  { name: 'Thanh Khê Đông', districtId: 'thanh-khe' },
+  { name: 'Thanh Khê Tây', districtId: 'thanh-khe' },
+  { name: 'Xuân Hà', districtId: 'thanh-khe' },
+  { name: 'Tân Chính', districtId: 'thanh-khe' },
+  { name: 'Chính Gián', districtId: 'thanh-khe' },
+  { name: 'Vĩnh Trung', districtId: 'thanh-khe' },
+  { name: 'Thạc Gián', districtId: 'thanh-khe' },
+  { name: 'An Khê', districtId: 'thanh-khe' },
+  { name: 'Hòa Khê', districtId: 'thanh-khe' },
+  { name: 'Hòa Minh', districtId: 'lien-chieu' },
+  { name: 'Hòa Khánh Bắc', districtId: 'lien-chieu' },
+  { name: 'Hòa Khánh Nam', districtId: 'lien-chieu' },
+  { name: 'Hòa Hiệp Bắc', districtId: 'lien-chieu' },
+  { name: 'Hòa Hiệp Nam', districtId: 'lien-chieu' },
+  { name: 'Khuê Trung', districtId: 'cam-le' },
+  { name: 'Hòa An', districtId: 'cam-le' },
+  { name: 'Hòa Phát', districtId: 'cam-le' },
+  { name: 'Hòa Thọ Đông', districtId: 'cam-le' },
+  { name: 'Hòa Thọ Tây', districtId: 'cam-le' },
+  { name: 'Hòa Xuân', districtId: 'cam-le' },
+  { name: 'Hòa Phong', districtId: 'hoa-vang' },
+  { name: 'Hòa Phú', districtId: 'hoa-vang' },
+  { name: 'Hòa Châu', districtId: 'hoa-vang' },
+  { name: 'Hòa Tiến', districtId: 'hoa-vang' },
+  { name: 'Hòa Phước', districtId: 'hoa-vang' },
+  { name: 'Hòa Nhơn', districtId: 'hoa-vang' },
+  { name: 'Hòa Sơn', districtId: 'hoa-vang' },
+  { name: 'Hòa Liên', districtId: 'hoa-vang' },
+  { name: 'Hòa Bắc', districtId: 'hoa-vang' },
+  { name: 'Hòa Khương', districtId: 'hoa-vang' },
+  { name: 'Hòa Ninh', districtId: 'hoa-vang' },
+] as const;
+
 const WARD_TO_DISTRICT = new Map(
-  [
-    ['Hải Châu 1', 'hai-chau'],
-    ['Hải Châu 2', 'hai-chau'],
-    ['Thạch Thang', 'hai-chau'],
-    ['Thanh Bình', 'hai-chau'],
-    ['Thuận Phước', 'hai-chau'],
-    ['Hòa Thuận Đông', 'hai-chau'],
-    ['Hòa Thuận Tây', 'hai-chau'],
-    ['Bình Hiên', 'hai-chau'],
-    ['Bình Thuận', 'hai-chau'],
-    ['Nam Dương', 'hai-chau'],
-    ['Phước Ninh', 'hai-chau'],
-    ['Hòa Cường Bắc', 'hai-chau'],
-    ['Hòa Cường Nam', 'hai-chau'],
-    ['An Hải Bắc', 'son-tra'],
-    ['An Hải Tây', 'son-tra'],
-    ['An Hải Đông', 'son-tra'],
-    ['Mân Thái', 'son-tra'],
-    ['Nại Hiên Đông', 'son-tra'],
-    ['Phước Mỹ', 'son-tra'],
-    ['Thọ Quang', 'son-tra'],
-    ['Mỹ An', 'ngu-hanh-son'],
-    ['Khuê Mỹ', 'ngu-hanh-son'],
-    ['Hòa Hải', 'ngu-hanh-son'],
-    ['Hòa Quý', 'ngu-hanh-son'],
-    ['Tam Thuận', 'thanh-khe'],
-    ['Thanh Khê Đông', 'thanh-khe'],
-    ['Thanh Khê Tây', 'thanh-khe'],
-    ['Xuân Hà', 'thanh-khe'],
-    ['Tân Chính', 'thanh-khe'],
-    ['Chính Gián', 'thanh-khe'],
-    ['Vĩnh Trung', 'thanh-khe'],
-    ['Thạc Gián', 'thanh-khe'],
-    ['An Khê', 'thanh-khe'],
-    ['Hòa Khê', 'thanh-khe'],
-    ['Hòa Minh', 'lien-chieu'],
-    ['Hòa Khánh Bắc', 'lien-chieu'],
-    ['Hòa Khánh Nam', 'lien-chieu'],
-    ['Hòa Hiệp Bắc', 'lien-chieu'],
-    ['Hòa Hiệp Nam', 'lien-chieu'],
-    ['Khuê Trung', 'cam-le'],
-    ['Hòa An', 'cam-le'],
-    ['Hòa Phát', 'cam-le'],
-    ['Hòa Thọ Đông', 'cam-le'],
-    ['Hòa Thọ Tây', 'cam-le'],
-    ['Hòa Xuân', 'cam-le'],
-    ['Hòa Phong', 'hoa-vang'],
-    ['Hòa Phú', 'hoa-vang'],
-    ['Hòa Châu', 'hoa-vang'],
-    ['Hòa Tiến', 'hoa-vang'],
-    ['Hòa Phước', 'hoa-vang'],
-    ['Hòa Nhơn', 'hoa-vang'],
-    ['Hòa Sơn', 'hoa-vang'],
-    ['Hòa Liên', 'hoa-vang'],
-    ['Hòa Bắc', 'hoa-vang'],
-    ['Hòa Khương', 'hoa-vang'],
-    ['Hòa Ninh', 'hoa-vang'],
-  ].map(([ward, districtId]) => [normalizeText(ward), districtId]),
+  WARD_OPTIONS.map(({ name, districtId }) => [normalizeText(name), districtId] as const),
 );
-
-const getImageUrl = (image: HinhAnhBaiDangDTO) =>
-  image.thumbnailUrl?.trim() || image.duongDan?.trim() || '';
-
-const hasVideoAsset = (images: HinhAnhBaiDangDTO[]) =>
-  images.some((image) => {
-    const type = (image.loai || '').toUpperCase();
-    const path = `${image.duongDan || ''} ${image.thumbnailUrl || ''}`.toLowerCase();
-
-    return type.includes('VIDEO') || /\.(mp4|mov|webm|avi)(\?|$)/i.test(path);
-  });
 
 const formatCurrency = (value?: number) => {
   if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) {
@@ -260,7 +253,7 @@ const getDateTime = (value?: string) => {
 
 const isPublicPost = (post: BaiDangDTO) => {
   const status = post.trangThai?.trim().toUpperCase();
-  return !status || !HIDDEN_POST_STATUSES.has(status);
+  return Boolean(status && PUBLIC_POST_STATUSES.has(status));
 };
 
 const mapCategoryDto = (category: DanhMucDTO): IHomeCategory => {
@@ -321,7 +314,8 @@ const buildPostCard = (
 
   const category = post.maDanhMuc ? categoryLookup.get(post.maDanhMuc) : undefined;
   const sortedImages = [...images].sort((a, b) => (a.thuTu ?? 0) - (b.thuTu ?? 0));
-  const gallery = sortedImages.map(getImageUrl).filter(Boolean);
+  const gallery = getPostImageUrls(sortedImages);
+  const videoUrls = getPostVideoUrls(sortedImages);
   const price = typeof detail?.gia === 'number' ? detail.gia : null;
   const area = typeof detail?.dienTich === 'number' ? detail.dienTich : null;
   const wardText = detail?.phuong?.trim() || 'Đang cập nhật';
@@ -352,7 +346,7 @@ const buildPostCard = (
     districtId: resolveDistrictId(addressText, wardText),
     createdAtTime: getDateTime(post.ngayDang) || index,
     likeCount: 0,
-    hasVideo: hasVideoAsset(images),
+    hasVideo: videoUrls.length > 0,
     isFeatured: false,
     isNew: false,
   };
@@ -439,6 +433,7 @@ export const createDefaultHomePageData = (): IHomePageData => ({
   stats: HOME_DEFAULT_STATS,
   categories: DEFAULT_HOME_CATEGORIES,
   districts: DISTRICT_OPTIONS,
+  allPosts: [],
   featuredPosts: [],
   newestPosts: [],
   priceRanges: PRICE_RANGE_OPTIONS.map((item) => item.label),
@@ -454,6 +449,7 @@ export const getHomePageData = async (): Promise<IHomePageData> => {
     stats: data.stats,
     categories: data.categories,
     districts: data.districts,
+    allPosts: data.posts,
     featuredPosts: data.posts.filter((post) => post.isFeatured).slice(0, 3),
     newestPosts: data.posts.slice(0, 5),
     priceRanges: PRICE_RANGE_OPTIONS.map((item) => item.label),

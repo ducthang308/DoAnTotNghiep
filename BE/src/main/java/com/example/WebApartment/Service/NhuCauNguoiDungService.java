@@ -36,6 +36,13 @@ public class NhuCauNguoiDungService {
         return toDto(entity);
     }
 
+    public NhuCauNguoiDungDTO getByNguoiDung(String maNguoiDung) {
+        return nhuCauNguoiDungRepository
+                .findTopByNguoiDung_MaNguoiDungOrderByNgayTaoDesc(maNguoiDung)
+                .map(this::toDto)
+                .orElse(null);
+    }
+
     public NhuCauNguoiDungDTO create(NhuCauNguoiDungDTO dto) {
 
         NguoiDung nguoiDung = getNguoiDung(dto.getMaNguoiDung());
@@ -64,12 +71,18 @@ public class NhuCauNguoiDungService {
             existing.setNguoiDung(nguoiDung);
         }
 
-        if (dto.getMinPrice() != null) existing.setMinPrice(dto.getMinPrice());
-        if (dto.getMaxPrice() != null) existing.setMaxPrice(dto.getMaxPrice());
-        if (dto.getPhuong() != null) existing.setPhuong(dto.getPhuong());
-        if (dto.getLoaiCanHo() != null) existing.setLoaiCanHo(dto.getLoaiCanHo());
+        existing.setMinPrice(dto.getMinPrice());
+        existing.setMaxPrice(dto.getMaxPrice());
+        existing.setPhuong(dto.getPhuong());
+        existing.setLoaiCanHo(dto.getLoaiCanHo());
         if (dto.getCoBanCong() != null) existing.setCoBanCong(dto.getCoBanCong());
         if (dto.getDayDuNoiThat() != null) existing.setDayDuNoiThat(dto.getDayDuNoiThat());
+        if (dto.getCoMayLanh() != null) existing.setCoMayLanh(dto.getCoMayLanh());
+        if (dto.getCoThangMay() != null) existing.setCoThangMay(dto.getCoThangMay());
+        if (dto.getCoMayGiat() != null) existing.setCoMayGiat(dto.getCoMayGiat());
+        if (dto.getCoNhaXe() != null) existing.setCoNhaXe(dto.getCoNhaXe());
+        if (dto.getCoTuLanh() != null) existing.setCoTuLanh(dto.getCoTuLanh());
+        if (dto.getGioGiacTuDo() != null) existing.setGioGiacTuDo(dto.getGioGiacTuDo());
         if (dto.getGanTrungTam() != null) existing.setGanTrungTam(dto.getGanTrungTam());
         if (dto.getGanBien() != null) existing.setGanBien(dto.getGanBien());
 
@@ -108,6 +121,12 @@ public class NhuCauNguoiDungService {
                 .loaiCanHo(entity.getLoaiCanHo())
                 .coBanCong(entity.getCoBanCong())
                 .dayDuNoiThat(entity.getDayDuNoiThat())
+                .coMayLanh(entity.getCoMayLanh())
+                .coThangMay(entity.getCoThangMay())
+                .coMayGiat(entity.getCoMayGiat())
+                .coNhaXe(entity.getCoNhaXe())
+                .coTuLanh(entity.getCoTuLanh())
+                .gioGiacTuDo(entity.getGioGiacTuDo())
                 .ganTrungTam(entity.getGanTrungTam())
                 .ganBien(entity.getGanBien())
                 .ngayTao(entity.getNgayTao())
@@ -126,6 +145,12 @@ public class NhuCauNguoiDungService {
                 .loaiCanHo(dto.getLoaiCanHo())
                 .coBanCong(dto.getCoBanCong())
                 .dayDuNoiThat(dto.getDayDuNoiThat())
+                .coMayLanh(dto.getCoMayLanh())
+                .coThangMay(dto.getCoThangMay())
+                .coMayGiat(dto.getCoMayGiat())
+                .coNhaXe(dto.getCoNhaXe())
+                .coTuLanh(dto.getCoTuLanh())
+                .gioGiacTuDo(dto.getGioGiacTuDo())
                 .ganTrungTam(dto.getGanTrungTam())
                 .ganBien(dto.getGanBien())
                 .ngayTao(dto.getNgayTao())

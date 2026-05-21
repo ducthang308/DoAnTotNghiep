@@ -10,6 +10,7 @@ import {
   getFavoritePostsByUser,
   getPostById,
   getPostImages,
+  getPostImageUrls,
   removeFavoritePost,
 } from '../../services/api/PostManagementService';
 import type {
@@ -46,7 +47,7 @@ interface FavoritePost {
   isFeatured?: boolean;
 }
 
-const HIDDEN_POST_STATUSES = new Set(['HIDDEN', 'PENDING', 'CHO_DUYET', 'TU_CHOI', 'DELETED']);
+const PUBLIC_POST_STATUSES = new Set(['ACTIVE', 'APPROVED']);
 
 const formatPrice = (value: number | null) => {
   if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) {
@@ -84,12 +85,9 @@ const getDateTime = (value?: string | null) => {
   return Number.isNaN(date.getTime()) ? 0 : date.getTime();
 };
 
-const getImageUrl = (image: HinhAnhBaiDangDTO) =>
-  image.thumbnailUrl?.trim() || image.duongDan?.trim() || '';
-
 const isPublicPost = (post: BaiDangDTO) => {
   const status = post.trangThai?.trim().toUpperCase();
-  return !status || !HIDDEN_POST_STATUSES.has(status);
+  return Boolean(status && PUBLIC_POST_STATUSES.has(status));
 };
 
 const resolveRentalStatus = (status?: string): FavoritePostStatus => {
@@ -130,7 +128,7 @@ const buildFavoritePost = async (
 
     const category = categories.find((item) => item.maDanhMuc === postResponse.maDanhMuc);
     const sortedImages = [...imagesResponse].sort((a, b) => (a.thuTu ?? 0) - (b.thuTu ?? 0));
-    const gallery = sortedImages.map(getImageUrl).filter(Boolean);
+    const gallery = getPostImageUrls(sortedImages);
     const address = detailResponse?.diaChiCuThe?.trim() || 'Đang cập nhật địa chỉ';
     const ward = detailResponse?.phuong?.trim() || '';
     const title =

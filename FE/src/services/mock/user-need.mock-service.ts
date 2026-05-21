@@ -19,6 +19,12 @@ class UserNeedMockService {
       loaiCanHo: payload.loaiCanHo || null,
       coBanCong: payload.coBanCong,
       dayDuNoiThat: payload.dayDuNoiThat,
+      coMayLanh: payload.coMayLanh,
+      coThangMay: payload.coThangMay,
+      coMayGiat: payload.coMayGiat,
+      coNhaXe: payload.coNhaXe,
+      coTuLanh: payload.coTuLanh,
+      gioGiacTuDo: payload.gioGiacTuDo,
       ganTrungTam: payload.ganTrungTam,
       ganBien: payload.ganBien,
       ngayTao:

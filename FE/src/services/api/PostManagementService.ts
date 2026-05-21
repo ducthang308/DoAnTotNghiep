@@ -10,6 +10,7 @@ export interface BaiDangDTO {
   trangThai?: string;
   lienHe?: string;
   hinhThucThanhToan?: string;
+  luotXem?: number;
 }
 
 export interface ChiTietCanHoDTO {
@@ -35,6 +36,33 @@ export interface HinhAnhBaiDangDTO {
   thuTu?: number;
 }
 
+const VIDEO_EXTENSION_REGEX = /\.(mp4|mov|webm|avi|m4v|mkv)(\?|$)/i;
+
+export const getPostMediaUrl = (media: HinhAnhBaiDangDTO) =>
+  media.duongDan?.trim() || media.thumbnailUrl?.trim() || "";
+
+export const getPostImageUrl = (media: HinhAnhBaiDangDTO) =>
+  media.thumbnailUrl?.trim() || media.duongDan?.trim() || "";
+
+export const isPostVideoAsset = (media: HinhAnhBaiDangDTO) => {
+  const type = (media.loai || "").trim().toUpperCase();
+  const path = `${media.duongDan || ""} ${media.thumbnailUrl || ""}`.toLowerCase();
+
+  return type.includes("VIDEO") || VIDEO_EXTENSION_REGEX.test(path);
+};
+
+export const getPostImageAssets = (media: HinhAnhBaiDangDTO[]) =>
+  media.filter((item) => !isPostVideoAsset(item));
+
+export const getPostVideoAssets = (media: HinhAnhBaiDangDTO[]) =>
+  media.filter(isPostVideoAsset);
+
+export const getPostImageUrls = (media: HinhAnhBaiDangDTO[]) =>
+  getPostImageAssets(media).map(getPostImageUrl).filter(Boolean);
+
+export const getPostVideoUrls = (media: HinhAnhBaiDangDTO[]) =>
+  getPostVideoAssets(media).map(getPostMediaUrl).filter(Boolean);
+
 export interface DanhMucDTO {
   maDanhMuc: string;
   tenDanhMuc: string;
@@ -52,13 +80,57 @@ export const getCategories = async () => {
   return res.data;
 };
 
+const mergePostsById = (posts: BaiDangDTO[]) => {
+  const result = new Map<string, BaiDangDTO>();
+
+  posts.forEach((post) => {
+    if (post.maBaiDang) {
+      result.set(post.maBaiDang, post);
+    }
+  });
+
+  return Array.from(result.values());
+};
+
 export const getPosts = async () => {
-  const res = await axiosClient.get<BaiDangDTO[]>("/api/v1/bai-dang");
-  return res.data;
+  const [listResult, detailResult] = await Promise.allSettled([
+    axiosClient.get<BaiDangDTO[]>("/api/v1/bai-dang"),
+    axiosClient.get<ChiTietCanHoDTO[]>("/api/v1/chi-tiet-can-ho"),
+  ]);
+
+  const listPosts = listResult.status === "fulfilled" ? listResult.value.data : [];
+  const knownPostIds = new Set(listPosts.map((post) => post.maBaiDang).filter(Boolean));
+  const detailPostIds =
+    detailResult.status === "fulfilled"
+      ? detailResult.value.data
+        .map((detail) => detail.maBaiDang)
+        .filter((id): id is string => Boolean(id && !knownPostIds.has(id)))
+      : [];
+
+  const postResults = await Promise.allSettled(
+    Array.from(new Set(detailPostIds)).map((id) =>
+      axiosClient.get<BaiDangDTO>(`/api/v1/bai-dang/${id}`)
+    )
+  );
+
+  const detailPosts = postResults.flatMap((result) =>
+    result.status === "fulfilled" ? [result.value.data] : []
+  );
+
+  if (listResult.status === "rejected" && detailResult.status === "rejected") {
+    throw listResult.reason;
+  }
+
+  return mergePostsById([...listPosts, ...detailPosts]);
 };
 
 export const getPostById = async (maBaiDang: string) => {
   const res = await axiosClient.get<BaiDangDTO>(`/api/v1/bai-dang/${maBaiDang}`);
+  return res.data;
+};
+
+export const increasePostView = async (maBaiDang: string) => {
+  const res = await axiosClient.put(`/api/v1/bai-dang/${maBaiDang}/view`);
   return res.data;
 };
 
@@ -106,6 +178,20 @@ export const uploadPostImages = async (maBaiDang: string, files: File[]) => {
 
   const res = await axiosClient.post<HinhAnhBaiDangDTO[]>(
     "/api/v1/hinh-anh-bai-dang/upload-multiple",
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } }
+  );
+
+  return res.data;
+};
+
+export const uploadPostVideo = async (maBaiDang: string, file: File) => {
+  const formData = new FormData();
+  formData.append("maBaiDang", maBaiDang);
+  formData.append("file", file);
+
+  const res = await axiosClient.post<HinhAnhBaiDangDTO>(
+    "/api/v1/hinh-anh-bai-dang/upload-video",
     formData,
     { headers: { "Content-Type": "multipart/form-data" } }
   );
@@ -236,6 +322,76 @@ export const generatePostContentByAI = async (
 ) => {
   const res = await axiosClient.post<AiPostContentResponse>(
     '/api/v1/ai/generate-post-content',
+    payload
+  );
+
+  return res.data;
+};
+
+
+export interface ChatbotRequestDTO {
+  maNguoiDung?: string;
+  message: string;
+}
+
+export interface ChatbotSuggestionDTO {
+  maBaiDang: string;
+  tieuDe: string;
+  gia: number;
+  phuong?: string;
+  diaChi?: string;
+  link?: string;
+}
+
+export interface ChatbotResponseDTO {
+  answer: string;
+  intent: string;
+  suggestions: ChatbotSuggestionDTO[];
+}
+
+export const askChatbot = async (payload: ChatbotRequestDTO) => {
+  const res = await axiosClient.post<ChatbotResponseDTO>(
+    '/api/v1/chatbot/ask',
+    payload
+  );
+
+  return res.data;
+};
+
+export interface RentPriceAnalysisRequest {
+  loaiCanHo?: string;
+  giaDeXuat?: number;
+  dienTich?: number;
+  phuong?: string;
+  diaChi?: string;
+  phongNgu?: number;
+
+  coBanCong?: boolean;
+  dayDuNoiThat?: boolean;
+  coMayLanh?: boolean;
+  coThangMay?: boolean;
+  coMayGiat?: boolean;
+  coNhaXe?: boolean;
+  coTuLanh?: boolean;
+  gioGiacTuDo?: boolean;
+  ganTrungTam?: boolean;
+  ganBien?: boolean;
+}
+
+export interface RentPriceAnalysisResponse {
+  mucDoHopLy: string;
+  giaThap: number;
+  giaCao: number;
+  giaKhuyenNghi: number;
+  nhanXet: string;
+  chienLuoc: string;
+}
+
+export const analyzeRentPrice = async (
+  payload: RentPriceAnalysisRequest
+) => {
+  const res = await axiosClient.post<RentPriceAnalysisResponse>(
+    '/api/v1/ai/rent-price-analysis',
     payload
   );
 

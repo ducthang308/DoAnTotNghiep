@@ -16,6 +16,12 @@ public class NhuCauNguoiDungDTO {
     private String loaiCanHo;
     private Boolean coBanCong;
     private Boolean dayDuNoiThat;
+    private Boolean coMayLanh;
+    private Boolean coThangMay;
+    private Boolean coMayGiat;
+    private Boolean coNhaXe;
+    private Boolean coTuLanh;
+    private Boolean gioGiacTuDo;
     private Boolean ganTrungTam;
     private Boolean ganBien;
 

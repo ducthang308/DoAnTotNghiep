@@ -1,11 +1,11 @@
 import AVT from "../../../assets/img/default-user.svg"
-import { Button } from 'antd';
 import "./navbar.css";
 
 import {
     EditOutlined,
     FolderOpenOutlined,
     FileTextOutlined,
+    BarChartOutlined,
     UserOutlined,
     LogoutOutlined,
 } from '@ant-design/icons';
@@ -42,6 +42,12 @@ const items: SidebarItem[] = [
     // },
 
     {
+        key: '4',
+        icon: <BarChartOutlined />,
+        label: 'Doanh thu & thống kê',
+        allowedRoles: LANDLORD_ROLE_IDS,
+    },
+    {
         key: '5',
         icon: <FileTextOutlined />,
         label: 'Quản lý giao dịch',
@@ -50,7 +56,7 @@ const items: SidebarItem[] = [
     {
         key: '6',
         icon: <FolderOpenOutlined />,
-        label: 'Quản lý gói nạp',
+        label: 'Gói đăng tin',
         allowedRoles: LANDLORD_ROLE_IDS,
     },
     // {
@@ -77,11 +83,10 @@ const items: SidebarItem[] = [
     },
 ];
 
-const navbar = () => {
+const Navbar = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { user, roleId } = useAuth();
-    const isLandlordRole = Boolean(roleId && LANDLORD_ROLE_IDS.includes(roleId));
     const visibleItems = items.filter((item) => {
         if (!item.allowedRoles) return true;
         return Boolean(roleId && item.allowedRoles.includes(roleId));
@@ -97,6 +102,9 @@ const navbar = () => {
                 break;
             case '3':
                 navigate('/payment/all');
+                break;
+            case '4':
+                navigate('/landlord-dashboard');
                 break;
             case '5':
                 navigate('/history?tab=package');
@@ -124,6 +132,7 @@ const navbar = () => {
     const selectedKey = (() => {
         if (location.pathname === '/listing') return ['1'];
         if (location.pathname === '/list-post') return ['2'];
+        if (location.pathname === '/landlord-dashboard') return ['4'];
         if (location.pathname === '/history') return ['5'];
         if (location.pathname === '/AccountManagement') return ['8'];
         if (location.pathname === '/tenant-transactions') return ['10'];
@@ -134,23 +143,13 @@ const navbar = () => {
         <div className="navbar-management">
             <div className="nav-header">
                 <div className="avatar-nav">
-                    <img src={AVT} alt="" className="avatar" />
+                    <img src={user?.anhDaiDien || AVT} alt="" className="avatar" />
                 </div>
                 <div className="info-nav">
                     <div className="fullname">{user?.hoVaTen || 'Tài khoản'}</div>
                     <div className="phone">{user?.soDienThoai || user?.vaiTro || ''}</div>
                 </div>
             </div>
-
-            {isLandlordRole && <div className="nav-payment">
-                <div className="balance">
-                    <div className="balance-title">Số dư của bạn</div>
-                    <div className="balance-number">0</div>
-                </div>
-                <div className="btn-payment">
-                    <Button type="primary"><i className="fa-regular fa-credit-card"></i> Nạp tiền</Button>
-                </div>
-            </div>}
 
             <div className="nav-tabs">
                 <Menu
@@ -170,4 +169,4 @@ const navbar = () => {
     )
 }
 
-export default navbar
+export default Navbar

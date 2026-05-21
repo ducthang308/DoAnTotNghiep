@@ -21,6 +21,11 @@ public class BaiDangController {
         return ResponseEntity.ok(service.getAll());
     }
 
+    @PutMapping("/{id}/view")
+    public ResponseEntity<BaiDangDTO> increaseView(@PathVariable String id) {
+        return ResponseEntity.ok(service.increaseView(id));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<BaiDangDTO> getById(@PathVariable String id) {
         return ResponseEntity.ok(service.getById(id));
@@ -37,6 +42,18 @@ public class BaiDangController {
     public ResponseEntity<BaiDangDTO> update(@PathVariable String id,
                                              @RequestBody BaiDangDTO dto) {
         return ResponseEntity.ok(service.update(id, dto));
+    }
+
+    @PutMapping("/{id}/approve")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BaiDangDTO> approve(@PathVariable String id) {
+        return ResponseEntity.ok(service.approve(id));
+    }
+
+    @PutMapping("/{id}/reject")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BaiDangDTO> reject(@PathVariable String id) {
+        return ResponseEntity.ok(service.reject(id));
     }
 
     @DeleteMapping("/{id}")

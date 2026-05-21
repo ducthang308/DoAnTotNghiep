@@ -1,12 +1,15 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  BarChartOutlined,
+  AppstoreOutlined,
   CheckSquareOutlined,
   CreditCardOutlined,
+  GiftOutlined,
   HomeOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import AdminTopbar from './AdminTopbar';
+import { getDashboardStats } from '../../../services/api/AdminDashboardService';
 import './admin-layout.css';
 
 const pageMeta: Record<string, { title: string; subtitle: string }> = {
@@ -18,15 +21,55 @@ const pageMeta: Record<string, { title: string; subtitle: string }> = {
     title: 'Duyệt bài đăng',
     subtitle: 'Kiểm tra nội dung, trạng thái và chất lượng bài đăng trước khi hiển thị.',
   },
+  '/admin/categories': {
+    title: 'Quản lý danh mục',
+    subtitle: 'Tạo, cập nhật và xóa các danh mục bài đăng trong hệ thống.',
+  },
+  '/admin/packages': {
+    title: 'Quản lý gói bài đăng',
+    subtitle: 'Thiết lập giá, thời hạn và trạng thái các gói đăng bài.',
+  },
   '/admin/payments': {
-    title: 'Duyệt thanh toán',
-    subtitle: 'Đối soát giao dịch đăng bài, xác nhận và xử lý trường hợp lỗi.',
+    title: 'Quản lý thanh toán',
+    subtitle: 'Danh sách các giao dịch, hóa đơn và lịch sử thanh toán trên hệ thống.',
+  },
+  '/admin/accounts': {
+    title: 'Quản lý tài khoản',
+    subtitle: 'Quản lý hồ sơ, vai trò và trạng thái hoạt động của tài khoản.',
   },
 };
 
 const AdminLayout: React.FC = () => {
   const location = useLocation();
   const meta = pageMeta[location.pathname] || pageMeta['/admin'];
+  const [queueSummary, setQueueSummary] = useState({ posts: 0, payments: 0 });
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadQueueSummary = async () => {
+      try {
+        const stats = await getDashboardStats();
+
+        if (!ignore) {
+          setQueueSummary({
+            posts: stats.pendingPosts ?? 0,
+            payments: stats.pendingPayments ?? 0,
+          });
+        }
+      } catch {
+        if (!ignore) setQueueSummary({ posts: 0, payments: 0 });
+      }
+    };
+
+    void loadQueueSummary();
+
+    return () => {
+      ignore = true;
+    };
+  }, [location.pathname]);
+
+  const queueTotal = queueSummary.posts + queueSummary.payments;
 
   return (
     <div className="admin-layout">
@@ -68,25 +111,48 @@ const AdminLayout: React.FC = () => {
             }
           >
             <CreditCardOutlined />
-            <span>Duyệt thanh toán</span>
+            <span>Quản lý thanh toán</span>
           </NavLink>
 
           <NavLink
-            to="/postsadmin"
+            to="/admin/categories"
             className={({ isActive }) =>
               `admin-layout__nav-link ${isActive ? 'active' : ''}`
             }
           >
-            <BarChartOutlined />
-            <span>Quản lý cũ</span>
+            <AppstoreOutlined />
+            <span>Quản lý danh mục</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/packages"
+            className={({ isActive }) =>
+              `admin-layout__nav-link ${isActive ? 'active' : ''}`
+            }
+          >
+            <GiftOutlined />
+            <span>Quản lý gói bài đăng</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/accounts"
+            className={({ isActive }) =>
+              `admin-layout__nav-link ${isActive ? 'active' : ''}`
+            }
+          >
+            <UserOutlined />
+            <span>Quản lý tài khoản</span>
           </NavLink>
         </nav>
 
         <div className="admin-layout__footer-card">
           <div className="admin-layout__footer-label">Hàng chờ xử lý hôm nay</div>
-          <div className="admin-layout__footer-value">27</div>
+          <div className="admin-layout__footer-value">
+            {queueTotal.toLocaleString('vi-VN')}
+          </div>
           <div className="admin-layout__footer-subtitle">
-            18 bài đăng • 9 thanh toán
+            {queueSummary.posts.toLocaleString('vi-VN')} bài đăng •{' '}
+            {queueSummary.payments.toLocaleString('vi-VN')} thanh toán
           </div>
         </div>
       </aside>

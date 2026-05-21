@@ -4,6 +4,7 @@ import type { LoginResponse } from '../services/types/auth.types';
 
 export type AuthUser = Omit<LoginResponse, 'token'> & {
   maVaiTro?: RoleId;
+  anhDaiDien?: string | null;
 };
 
 export type AuthSession = {
@@ -21,6 +22,9 @@ const STORAGE_KEYS = {
   vaiTro: 'vaiTro',
   maVaiTro: 'maVaiTro',
 } as const;
+
+export const AUTH_SESSION_CLEARED_EVENT = 'auth-session:cleared';
+export const AUTH_SESSION_CHANGED_EVENT = 'auth-session:changed';
 
 const readStoredUser = (): AuthUser | null => {
   const rawUser = localStorage.getItem(STORAGE_KEYS.user);
@@ -44,6 +48,7 @@ const readStoredUser = (): AuthUser | null => {
     soDienThoai: '',
     email: localStorage.getItem(STORAGE_KEYS.email) ?? '',
     vaiTro: localStorage.getItem(STORAGE_KEYS.vaiTro) ?? '',
+    anhDaiDien: null,
     maVaiTro: getRoleId(
       localStorage.getItem(STORAGE_KEYS.maVaiTro),
       localStorage.getItem(STORAGE_KEYS.vaiTro),
@@ -71,6 +76,8 @@ export const saveAuthSession = (loginResponse: LoginResponse): AuthSession => {
   } else {
     localStorage.removeItem(STORAGE_KEYS.maVaiTro);
   }
+
+  window.dispatchEvent(new Event(AUTH_SESSION_CHANGED_EVENT));
 
   return {
     token,
@@ -103,4 +110,7 @@ export const getAuthSession = (): AuthSession | null => {
 
 export const clearAuthSession = () => {
   Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
+  localStorage.removeItem('chatbot_history');
+  window.dispatchEvent(new Event(AUTH_SESSION_CLEARED_EVENT));
+  window.dispatchEvent(new Event(AUTH_SESSION_CHANGED_EVENT));
 };

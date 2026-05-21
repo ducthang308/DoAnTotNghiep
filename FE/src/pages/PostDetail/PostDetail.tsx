@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createSepayPayment } from '../../services/api/PostManagementService';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import './PostDetail.css';
 import fallbackRoomImage from '../../assets/img/co4la.png';
 import {
@@ -11,6 +11,9 @@ import {
   getFavoritePostsByUser,
   getPostById,
   getPostImages,
+  getPostImageUrls,
+  getPostVideoUrls,
+  increasePostView,
   removeFavoritePost,
 } from '../../services/api/PostManagementService';
 import type {
@@ -20,6 +23,8 @@ import type {
   HinhAnhBaiDangDTO,
 } from '../../services/api/PostManagementService';
 import { homeMockData } from '../../services/mock/home.mock';
+import { getUserById } from '../../services/api/UserService';
+import type { UserProfileResponse } from '../../services/api/UserService';
 import { getAuthSession } from '../../utils/storage';
 
 interface PostDetailView {
@@ -34,16 +39,18 @@ interface PostDetailView {
   coverImage: string;
   gallery: string[];
   postedBy: string;
+  ownerAvatar?: string | null;
   postedAtText: string;
   phone: string;
   tags: string[];
   amenities: string[];
+  videoUrls: string[];
   hasVideo: boolean;
   isFeatured: boolean;
   isNew: boolean;
 }
 
-const HIDDEN_POST_STATUSES = new Set(['HIDDEN', 'PENDING', 'CHO_DUYET', 'TU_CHOI', 'DELETED']);
+const PUBLIC_POST_STATUSES = new Set(['ACTIVE', 'APPROVED']);
 
 const formatCurrency = (value?: number) => {
   if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) {
@@ -83,19 +90,8 @@ const formatPostedAt = (value?: string) => {
 
 const isPublicPost = (post: BaiDangDTO) => {
   const status = post.trangThai?.trim().toUpperCase();
-  return !status || !HIDDEN_POST_STATUSES.has(status);
+  return Boolean(status && PUBLIC_POST_STATUSES.has(status));
 };
-
-const getImageUrl = (image: HinhAnhBaiDangDTO) =>
-  image.thumbnailUrl?.trim() || image.duongDan?.trim() || '';
-
-const hasVideoAsset = (images: HinhAnhBaiDangDTO[]) =>
-  images.some((image) => {
-    const type = (image.loai || '').toUpperCase();
-    const path = `${image.duongDan || ''} ${image.thumbnailUrl || ''}`.toLowerCase();
-
-    return type.includes('VIDEO') || /\.(mp4|mov|webm|avi)(\?|$)/i.test(path);
-  });
 
 const findMockPost = (id?: string): PostDetailView | null => {
   if (!id) return null;
@@ -113,6 +109,8 @@ const findMockPost = (id?: string): PostDetailView | null => {
     id: String(post.id),
     gallery: post.gallery.length > 0 ? post.gallery : [post.coverImage || fallbackRoomImage],
     coverImage: post.coverImage || post.gallery[0] || fallbackRoomImage,
+    ownerAvatar: null,
+    videoUrls: [],
     isFeatured: Boolean(post.isFeatured),
     isNew: Boolean(post.isNew),
     hasVideo: Boolean(post.hasVideo),
@@ -124,12 +122,19 @@ const buildApiPostDetail = (
   detail: ChiTietCanHoDTO | null,
   images: HinhAnhBaiDangDTO[],
   categories: DanhMucDTO[],
+  owner: UserProfileResponse | null,
+  currentUserId?: string,
 ): PostDetailView | null => {
-  if (!post.maBaiDang || !isPublicPost(post)) return null;
+  if (!post.maBaiDang) return null;
+
+  const isOwner = Boolean(currentUserId && post.maNguoiDung === currentUserId);
+
+  if (!isOwner && !isPublicPost(post)) return null;
 
   const category = categories.find((item) => item.maDanhMuc === post.maDanhMuc);
   const sortedImages = [...images].sort((a, b) => (a.thuTu ?? 0) - (b.thuTu ?? 0));
-  const gallery = sortedImages.map(getImageUrl).filter(Boolean);
+  const gallery = getPostImageUrls(sortedImages);
+  const videoUrls = getPostVideoUrls(sortedImages);
   const wardText = detail?.phuong?.trim() || 'Đang cập nhật';
   const addressText =
     [detail?.diaChiCuThe, detail?.phuong].filter(Boolean).join(', ') ||
@@ -146,12 +151,14 @@ const buildApiPostDetail = (
     description: post.noiDung?.trim() || 'Chưa có mô tả chi tiết.',
     coverImage: gallery[0] || fallbackRoomImage,
     gallery: gallery.length > 0 ? gallery : [fallbackRoomImage],
-    postedBy: 'Chủ nhà',
+    postedBy: owner?.hoVaTen?.trim() || 'Chủ nhà',
+    ownerAvatar: owner?.anhDaiDien || null,
     postedAtText: formatPostedAt(post.ngayDang),
-    phone: post.lienHe?.trim() || 'Đang cập nhật',
+    phone: post.lienHe?.trim() || owner?.soDienThoai?.trim() || 'Đang cập nhật',
     tags: [],
     amenities: [],
-    hasVideo: hasVideoAsset(images),
+    videoUrls,
+    hasVideo: videoUrls.length > 0,
     isFeatured: true,
     isNew: true,
   };
@@ -160,6 +167,7 @@ const buildApiPostDetail = (
 const PostDetail: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [post, setPost] = useState<PostDetailView | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -167,8 +175,35 @@ const PostDetail: React.FC = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteCount, setFavoriteCount] = useState(0);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const viewedRef = useRef(false);
 
   const maNguoiDung = getAuthSession()?.user.maNguoiDung || '';
+
+  useEffect(() => {
+    if (!id || viewedRef.current) return;
+
+    const key = `viewed_post_${id}`;
+    const viewedTime = localStorage.getItem(key);
+    const THIRTY_MINUTES = 30 * 60 * 1000;
+
+    if (
+      viewedTime &&
+      Date.now() - Number(viewedTime) < THIRTY_MINUTES
+    ) {
+      viewedRef.current = true;
+      return;
+    }
+
+    viewedRef.current = true;
+
+    increasePostView(id)
+      .then(() => {
+        localStorage.setItem(key, Date.now().toString());
+      })
+      .catch((error) => {
+        console.error('Không thể tăng lượt xem:', error);
+      });
+  }, [id]);
 
   useEffect(() => {
     let ignore = false;
@@ -194,11 +229,16 @@ const PostDetail: React.FC = () => {
           getApartmentDetailByPost(maBaiDang).catch(() => null),
           getPostImages(maBaiDang).catch(() => [] as HinhAnhBaiDangDTO[]),
         ]);
+        const ownerResponse = postResponse.maNguoiDung && maNguoiDung
+          ? await getUserById(postResponse.maNguoiDung).catch(() => null)
+          : null;
         const mappedPost = buildApiPostDetail(
           postResponse,
           detailResponse,
           imagesResponse,
           categoriesResponse,
+          ownerResponse,
+          maNguoiDung,
         );
 
         if (!ignore) {
@@ -223,7 +263,7 @@ const PostDetail: React.FC = () => {
     return () => {
       ignore = true;
     };
-  }, [id]);
+  }, [id, maNguoiDung]);
 
   useEffect(() => {
     let ignore = false;
@@ -261,7 +301,14 @@ const PostDetail: React.FC = () => {
     if (!post?.id) return;
 
     if (!maNguoiDung) {
-      navigate('/login');
+      navigate('/login', {
+        state: {
+          from: {
+            pathname: location.pathname,
+            search: location.search,
+          },
+        },
+      });
       return;
     }
 
@@ -316,7 +363,14 @@ const PostDetail: React.FC = () => {
 
       if (!maNguoiDung) {
         alert('Vui lòng đăng nhập trước khi thuê căn hộ');
-        navigate('/login');
+        navigate('/login', {
+          state: {
+            from: {
+              pathname: location.pathname,
+              search: location.search,
+            },
+          },
+        });
         return;
       }
 
@@ -447,6 +501,30 @@ const PostDetail: React.FC = () => {
               </div>
             </section>
 
+            {post.videoUrls.length > 0 && (
+              <section className="rental-detail-video-card">
+                <div className="rental-detail-video-header">
+                  <h2>Video</h2>
+                  <span>{post.videoUrls.length} video</span>
+                </div>
+
+                <div className="rental-detail-video-list">
+                  {post.videoUrls.map((videoUrl, index) => (
+                    <video
+                      key={`${videoUrl}-${index}`}
+                      className="rental-detail-video-player"
+                      src={videoUrl}
+                      controls
+                      preload="metadata"
+                      title={`Video ${index + 1} của ${post.title}`}
+                    >
+                      Trình duyệt không hỗ trợ phát video.
+                    </video>
+                  ))}
+                </div>
+              </section>
+            )}
+
             <section className="rental-detail-content-card">
               <div className="rental-detail-header">
                 <div className="rental-detail-header-left">
@@ -509,7 +587,11 @@ const PostDetail: React.FC = () => {
           <aside className="rental-detail-sidebar">
             <div className="rental-detail-owner-card">
               <div className="rental-detail-owner-avatar">
-                {post.postedBy.charAt(0).toUpperCase() || 'C'}
+                {post.ownerAvatar ? (
+                  <img src={post.ownerAvatar} alt={post.postedBy} />
+                ) : (
+                  post.postedBy.charAt(0).toUpperCase() || 'C'
+                )}
               </div>
 
               <div className="rental-detail-owner-content">

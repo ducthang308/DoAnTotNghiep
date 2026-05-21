@@ -10,6 +10,12 @@ export interface NhuCauNguoiDungDTO {
   loaiCanHo: string | null;
   coBanCong: boolean;
   dayDuNoiThat: boolean;
+  coMayLanh: boolean;
+  coThangMay: boolean;
+  coMayGiat: boolean;
+  coNhaXe: boolean;
+  coTuLanh: boolean;
+  gioGiacTuDo: boolean;
   ganTrungTam: boolean;
   ganBien: boolean;
   ngayTao?: string | null;
@@ -26,6 +32,12 @@ const toDto = (
   loaiCanHo: values.loaiCanHo || null,
   coBanCong: values.coBanCong,
   dayDuNoiThat: values.dayDuNoiThat,
+  coMayLanh: values.coMayLanh,
+  coThangMay: values.coThangMay,
+  coMayGiat: values.coMayGiat,
+  coNhaXe: values.coNhaXe,
+  coTuLanh: values.coTuLanh,
+  gioGiacTuDo: values.gioGiacTuDo,
   ganTrungTam: values.ganTrungTam,
   ganBien: values.ganBien,
 });
@@ -38,8 +50,11 @@ export const getUserNeeds = async () => {
 };
 
 export const getUserNeedByUserId = async (maNguoiDung: string) => {
-  const needs = await getUserNeeds();
-  return needs.find((item) => item.maNguoiDung === maNguoiDung) || null;
+  const response = await axiosClient.get<NhuCauNguoiDungDTO | "">(
+    `/api/v1/nhucaunguoidung/nguoi-dung/${maNguoiDung}`
+  );
+
+  return response.data || null;
 };
 
 export const createUserNeed = async (

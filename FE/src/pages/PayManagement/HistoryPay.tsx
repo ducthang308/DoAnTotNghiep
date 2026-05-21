@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import "./HistoryPay.css";
 import { Link, useSearchParams } from "react-router-dom";
-import { Alert, Tag, Table, Button, Card, Descriptions, Modal } from "antd";
+import { Alert, Tag, Table, Button, Card, Descriptions, Modal, Space, message } from "antd";
 import Navbar from "../../components/layout/Navbar/navbar";
 import { getHoaDonByNguoiDung } from "../../services/api/PostManagementService";
 import type { HoaDonDTO } from "../../services/api/PostManagementService";
+import { openInvoicePrintWindow } from "../../utils/invoicePrint";
+import type { InvoicePrintRow } from "../../utils/invoicePrint";
 
 type PackageRow = {
   id: string;
@@ -191,6 +193,39 @@ const History = () => {
     setSearchParams({ tab });
   };
 
+  const handleExportInvoice = (invoice: HoaDonDTO) => {
+    const invoiceTitle =
+      normalizeStatus(invoice.loaiHoaDon) === "DANG_BAI"
+        ? "Hóa đơn thanh toán bài đăng"
+        : "Hóa đơn giao dịch";
+    const invoiceRows: InvoicePrintRow[] = [
+      ["Mã hóa đơn", invoice.maHoaDon],
+      ["Loại giao dịch", getInvoiceTypeLabel(invoice.loaiHoaDon)],
+      ["Số tiền", `${(invoice.soTien || 0).toLocaleString("vi-VN")} đ`],
+      ["Trạng thái thanh toán", getPaymentStatusLabel(invoice.trangThaiThanhToan)],
+      ["Trạng thái hiệu lực", invoice.trangThaiHieuLuc || "-"],
+      ["Mã chuyển khoản", invoice.noiDungChuyenKhoan || "-"],
+      ["Ghi chú", invoice.ghiChu || "-"],
+      ["Ngày tạo", formatDateTime(invoice.ngayTao)],
+      ["Ngày thanh toán", formatDateTime(invoice.ngayThanhToan)],
+      ["Ngày bắt đầu", formatDateTime(invoice.ngayBatDau)],
+      ["Ngày kết thúc", formatDateTime(invoice.ngayKetThuc)],
+    ];
+
+    const didOpen = openInvoicePrintWindow({
+      title: invoiceTitle,
+      documentTitle: `${invoiceTitle} ${invoice.maHoaDon}`,
+      generatedAt: formatDateTime(new Date().toISOString()),
+      rows: invoiceRows,
+      footer: "Hóa đơn được xuất từ hệ thống quản lý tài chính người cho thuê.",
+      signerLabel: "Chữ ký người cho thuê",
+    });
+
+    if (!didOpen) {
+      message.error("Trình duyệt đang chặn cửa sổ xuất hóa đơn");
+    }
+  };
+
   const packageColumns = [
     { title: "Tên gói", dataIndex: "name", key: "name" },
     { title: "Ngày kích hoạt", dataIndex: "startDate", key: "startDate" },
@@ -260,9 +295,14 @@ const History = () => {
       title: "Hành động",
       key: "action",
       render: (_: unknown, record: TransactionRow) => (
-        <Button type="link" onClick={() => setSelectedInvoice(record.invoice)}>
-          Chi tiết
-        </Button>
+        <Space>
+          <Button type="link" onClick={() => setSelectedInvoice(record.invoice)}>
+            Chi tiết
+          </Button>
+          <Button type="link" onClick={() => handleExportInvoice(record.invoice)}>
+            In hóa đơn
+          </Button>
+        </Space>
       ),
     },
   ];
@@ -384,7 +424,22 @@ const History = () => {
         title="Chi tiết hóa đơn"
         open={Boolean(selectedInvoice)}
         onCancel={() => setSelectedInvoice(null)}
-        footer={null}
+        footer={
+          selectedInvoice
+            ? [
+                <Button key="close" onClick={() => setSelectedInvoice(null)}>
+                  Đóng
+                </Button>,
+                <Button
+                  key="export"
+                  type="primary"
+                  onClick={() => handleExportInvoice(selectedInvoice)}
+                >
+                  In hóa đơn
+                </Button>,
+              ]
+            : null
+        }
       >
         {selectedInvoice && (
           <Descriptions column={1} size="small" bordered>
