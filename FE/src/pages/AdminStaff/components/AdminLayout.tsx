@@ -6,6 +6,8 @@ import {
   GiftOutlined,
   HomeOutlined,
   UserOutlined,
+  MessageOutlined,
+  WalletOutlined,
 } from '@ant-design/icons';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import AdminTopbar from './AdminTopbar';
@@ -33,9 +35,17 @@ const pageMeta: Record<string, { title: string; subtitle: string }> = {
     title: 'Quản lý thanh toán',
     subtitle: 'Danh sách các giao dịch, hóa đơn và lịch sử thanh toán trên hệ thống.',
   },
+  '/admin/withdrawals': {
+    title: 'Quản lý rút tiền',
+    subtitle: 'Xác nhận chuyển khoản, từ chối và in phiếu rút tiền cho người cho thuê.',
+  },
   '/admin/accounts': {
     title: 'Quản lý tài khoản',
     subtitle: 'Quản lý hồ sơ, vai trò và trạng thái hoạt động của tài khoản.',
+  },
+  '/admin/chat': {
+    title: 'Hỗ trợ khách hàng',
+    subtitle: 'Nhắn tin trực tuyến và giải đáp thắc mắc cho người dùng hệ thống.',
   },
 };
 
@@ -115,6 +125,16 @@ const AdminLayout: React.FC = () => {
           </NavLink>
 
           <NavLink
+            to="/admin/withdrawals"
+            className={({ isActive }) =>
+              `admin-layout__nav-link ${isActive ? 'active' : ''}`
+            }
+          >
+            <WalletOutlined />
+            <span>Yêu cầu rút tiền</span>
+          </NavLink>
+
+          <NavLink
             to="/admin/categories"
             className={({ isActive }) =>
               `admin-layout__nav-link ${isActive ? 'active' : ''}`
@@ -142,6 +162,16 @@ const AdminLayout: React.FC = () => {
           >
             <UserOutlined />
             <span>Quản lý tài khoản</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/chat"
+            className={({ isActive }) =>
+              `admin-layout__nav-link ${isActive ? 'active' : ''}`
+            }
+          >
+            <MessageOutlined />
+            <span>Hỗ trợ khách hàng</span>
           </NavLink>
         </nav>
 

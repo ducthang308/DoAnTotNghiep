@@ -65,8 +65,9 @@ public class WebSecurityConfig {
                                 HttpMethod.PUT,
                                 String.format("%s/bai-dang/*/view", apiPrefix)
                         ).permitAll()
-                        .requestMatchers("/ws/**").permitAll()
-                        .requestMatchers("/ws-chat/**").permitAll()
+                        .requestMatchers("/ws", "/ws/**").permitAll()
+                        .requestMatchers("/ws-chat", "/ws-chat/**").permitAll()
+                        .requestMatchers("/ws-chat-sockjs", "/ws-chat-sockjs/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )
@@ -81,7 +82,10 @@ public class WebSecurityConfig {
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173"));
+        config.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "http://127.0.0.1:*"
+        ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

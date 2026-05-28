@@ -26,12 +26,14 @@ import { homeMockData } from '../../services/mock/home.mock';
 import { getUserById } from '../../services/api/UserService';
 import type { UserProfileResponse } from '../../services/api/UserService';
 import { getAuthSession } from '../../utils/storage';
+import { getOrCreateRoom } from '../../services/api/ChatService';
 
 interface PostDetailView {
   id: string;
   title: string;
   priceText: string;
   areaText: string;
+  directionText: string;
   addressText: string;
   wardText: string;
   categoryLabel: string;
@@ -48,6 +50,7 @@ interface PostDetailView {
   hasVideo: boolean;
   isFeatured: boolean;
   isNew: boolean;
+  ownerId?: string;
 }
 
 const PUBLIC_POST_STATUSES = new Set(['ACTIVE', 'APPROVED']);
@@ -107,6 +110,7 @@ const findMockPost = (id?: string): PostDetailView | null => {
   return {
     ...post,
     id: String(post.id),
+    directionText: 'Đang cập nhật',
     gallery: post.gallery.length > 0 ? post.gallery : [post.coverImage || fallbackRoomImage],
     coverImage: post.coverImage || post.gallery[0] || fallbackRoomImage,
     ownerAvatar: null,
@@ -135,6 +139,7 @@ const buildApiPostDetail = (
   const sortedImages = [...images].sort((a, b) => (a.thuTu ?? 0) - (b.thuTu ?? 0));
   const gallery = getPostImageUrls(sortedImages);
   const videoUrls = getPostVideoUrls(sortedImages);
+  const directionText = detail?.huongCanHo?.trim() || 'Đang cập nhật';
   const wardText = detail?.phuong?.trim() || 'Đang cập nhật';
   const addressText =
     [detail?.diaChiCuThe, detail?.phuong].filter(Boolean).join(', ') ||
@@ -145,6 +150,7 @@ const buildApiPostDetail = (
     title: post.tieuDe?.trim() || 'Bài đăng chưa có tiêu đề',
     priceText: formatCurrency(detail?.gia),
     areaText: formatArea(detail?.dienTich),
+    directionText,
     addressText,
     wardText,
     categoryLabel: category?.tenDanhMuc || post.maDanhMuc || 'Danh mục',
@@ -161,6 +167,7 @@ const buildApiPostDetail = (
     hasVideo: videoUrls.length > 0,
     isFeatured: true,
     isNew: true,
+    ownerId: post.maNguoiDung,
   };
 };
 
@@ -348,6 +355,7 @@ const PostDetail: React.FC = () => {
     return [
       { label: 'Mức giá', value: post.priceText },
       { label: 'Diện tích', value: post.areaText },
+      { label: 'Hướng căn hộ', value: post.directionText },
       { label: 'Khu vực', value: post.wardText },
       { label: 'Loại tin', value: post.categoryLabel },
       { label: 'Đăng lúc', value: post.postedAtText },
@@ -389,19 +397,67 @@ const PostDetail: React.FC = () => {
       const payment = await createSepayPayment({
         maNguoiDung,
         maBaiDang: post.id,
+        // maBaiDangList: [post.id],
         loaiHoaDon: 'THUE_CAN_HO',
         soTien,
         ghiChu: `Thanh toán thuê căn hộ ${post.title}`,
       });
 
       navigate('/payment/sepay', {
-        state: payment,
+        state: {
+          ...payment,
+          loaiHoaDon: 'THUE_CAN_HO',
+          maBaiDang: post.id,
+          // maBaiDangList: [post.id],
+        },
       });
     } catch (error: any) {
       console.error(error);
       alert(
         error?.response?.data?.message ||
         'Không thể tạo thanh toán thuê căn hộ'
+      );
+    }
+  };
+
+  const handleChatWithOwner = async () => {
+    const currentUserId = getAuthSession()?.user.maNguoiDung;
+    if (!currentUserId) {
+      alert('Vui lòng đăng nhập để nhắn tin với chủ nhà');
+      navigate('/login', {
+        state: {
+          from: {
+            pathname: location.pathname,
+            search: location.search,
+          },
+        },
+      });
+      return;
+    }
+
+    if (!post?.ownerId) {
+      alert('Không tìm thấy thông tin chủ nhà.');
+      return;
+    }
+
+    if (currentUserId === post.ownerId) {
+      alert('Bạn không thể nhắn tin với chính mình.');
+      return;
+    }
+
+    try {
+      const room = await getOrCreateRoom({
+        maNguoiDung1: currentUserId,
+        maNguoiDung2: post.ownerId,
+        maBaiDang: post.id,
+        loaiPhongChat: 'USER_HOST',
+      });
+      navigate(`/chat?room=${room.maPhongChat}`);
+    } catch (error: any) {
+      console.error('Lỗi khi tạo phòng chat:', error);
+      alert(
+        error?.response?.data?.message ||
+        'Không thể kết nối trò chuyện. Vui lòng thử lại sau!'
       );
     }
   };
@@ -613,6 +669,16 @@ const PostDetail: React.FC = () => {
                 >
                   Nhắn Zalo
                 </button>
+
+                {maNguoiDung !== post?.ownerId && (
+                  <button
+                    type="button"
+                    className="rental-detail-btn rental-detail-btn--chat"
+                    onClick={handleChatWithOwner}
+                  >
+                    Nhắn tin chủ nhà
+                  </button>
+                )}
 
                 <button
                   type="button"
