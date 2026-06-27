@@ -3,7 +3,7 @@ import {
   getApartmentDetailByPost,
   getCategories,
   getFavoriteCountByPost,
-  getHomeVisiblePosts,
+  getPosts,
   getPostImages,
   getPostImageUrls,
   getPostVideoUrls,
@@ -44,7 +44,7 @@ interface ListingData {
   stats: IHomeStat[];
 }
 
-const PUBLIC_POST_STATUSES = new Set(['ACTIVE', 'APPROVED', 'DA_THUE']);
+const PUBLIC_POST_STATUSES = new Set(['ACTIVE', 'APPROVED']);
 const RENTED_POST_STATUS = 'DA_THUE';
 
 export const HOME_STATIC_CONTENT = {
@@ -421,7 +421,7 @@ const sortHomePosts = (posts: IHomePostCard[]) =>
 
 export const getRentalListingData = async (): Promise<ListingData> => {
   const [postsResponse, categoriesResponse] = await Promise.all([
-    getHomeVisiblePosts(20),
+    getPosts(),
     getCategories().catch(() => [] as DanhMucDTO[]),
   ]);
 
